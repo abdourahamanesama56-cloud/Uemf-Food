@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function me() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    // Admin d'un restaurant précis (rôle posé à la main dans la console).
+    function isAdminOf(rid) {
+      return signedIn() && me().role == 'admin' && me().restaurantId == rid;
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      // Un étudiant ne peut jamais se donner le rôle admin.
+      allow create: if signedIn() && request.auth.uid == uid
+                    && request.resource.data.role == 'student';
+      allow update, delete: if false;
+    }
+
+    match /menu_items/{id} {
+      allow read: if signedIn();
+      allow create: if isAdminOf(request.resource.data.restaurantId);
+      allow update: if isAdminOf(resource.data.restaurantId)
+                    && request.resource.data.restaurantId == resource.data.restaurantId;
+      allow delete: if isAdminOf(resource.data.restaurantId);
+    }
+
+    match /orders/{id} {
+      allow create: if signedIn()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.status == 'pending';
+      allow read: if signedIn()
+                  && (resource.data.userId == request.auth.uid
+                      || isAdminOf(resource.data.restaurantId));
+      // L'admin ne peut changer que le statut.
+      allow update: if isAdminOf(resource.data.restaurantId)
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['status', 'updatedAt']);
+      allow delete: if false;
+    }
+  }
+}
