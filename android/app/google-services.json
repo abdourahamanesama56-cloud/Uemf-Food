@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1005536648471",
+    "project_id": "uemf-food",
+    "storage_bucket": "uemf-food.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1005536648471:android:b4af338efdd8f2f08eeb52",
+        "android_client_info": {
+          "package_name": "com.example.uemf_food"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACIDLfumnqaIyF0FTp6coECJb2Ha22DT0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
