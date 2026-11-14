@@ -260,6 +260,7 @@ Future<void> _editDish(
             : d.price.toString()),
   );
   final desc = TextEditingController(text: d?.desc ?? '');
+  final allergens = TextEditingController(text: d?.allergens.join(', ') ?? '');
 
   final res = await showDialog<String>(
     context: context,
@@ -288,7 +289,16 @@ Future<void> _editDish(
             const SizedBox(height: 10),
             TextField(
               controller: desc,
-              decoration: InputDecoration(labelText: lang.t('desc')),
+              maxLines: 3,
+              decoration: const InputDecoration(labelText: 'Composition / ingrédients'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: allergens,
+              decoration: const InputDecoration(
+                labelText: 'Allergènes (séparés par des virgules)',
+                hintText: 'Gluten, Lait, Œufs...',
+              ),
             ),
           ],
         ),
@@ -347,6 +357,8 @@ Future<void> _editDish(
       note: note,
       name: name.text.trim(),
       desc: descText.isEmpty ? null : descText,
+      allergens: allergens.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toSet().toList(),
+      compositionVerified: descText.isNotEmpty,
       price: p,
       available: d?.available ?? true,
       order: d?.order ?? maxOrder + 1,

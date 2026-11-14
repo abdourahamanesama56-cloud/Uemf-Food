@@ -87,11 +87,20 @@ class OrderCard extends StatelessWidget {
             const Divider(height: 20),
             for (final l in order.items)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: Text('${l.qty} × ${l.name}')),
-                    Text(formatPrice(l.price * l.qty)),
+                    Row(
+                      children: [
+                        Expanded(child: Text('${l.qty} × ${l.name}')),
+                        Text(formatPrice(l.price * l.qty)),
+                      ],
+                    ),
+                    if (l.composition.isNotEmpty)
+                      Text(l.composition, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                    if (l.allergens.isNotEmpty)
+                      Text('Allergènes possibles : ${l.allergens.join(', ')}', style: const TextStyle(fontSize: 11, color: Colors.deepOrange)),
                   ],
                 ),
               ),

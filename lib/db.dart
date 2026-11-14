@@ -48,7 +48,7 @@ class Db {
       'restaurantName': r.name,
       'items': [
         for (final l in cart.lines.values)
-          {'name': l.dish.name, 'price': l.dish.price, 'qty': l.qty},
+          {'name': l.dish.name, 'composition': l.dish.desc ?? '', 'allergens': l.dish.allergens, 'price': l.dish.price, 'qty': l.qty},
       ],
       'total': cart.total,
       'note': note.trim(),

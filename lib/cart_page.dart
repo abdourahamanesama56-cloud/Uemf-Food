@@ -100,12 +100,18 @@ class _CartPageState extends State<CartPage> {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                subtitle: Text(
-                                  formatPrice(l.dish.price * l.qty),
-                                  style: const TextStyle(
-                                    color: kTerracotta,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if ((l.dish.desc ?? '').isNotEmpty)
+                                      Text(l.dish.desc!, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                                    if (l.dish.allergens.isNotEmpty)
+                                      Text('Allergènes possibles : ${l.dish.allergens.join(', ')}', style: const TextStyle(fontSize: 11, color: Colors.deepOrange)),
+                                    Text(
+                                      formatPrice(l.dish.price * l.qty),
+                                      style: const TextStyle(color: kTerracotta, fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
                                 ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,

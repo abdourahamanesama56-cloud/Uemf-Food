@@ -177,6 +177,19 @@ class _DishRow extends StatelessWidget {
                     desc,
                     style: const TextStyle(fontSize: 12.5, color: Colors.black54),
                   ),
+                if (dish.allergens.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Text(
+                      'Allergènes possibles : ${dish.allergens.join(', ')}',
+                      style: const TextStyle(fontSize: 11.5, color: Colors.deepOrange),
+                    ),
+                  ),
+                if (!dish.compositionVerified)
+                  const Text(
+                    'Composition indicative — à confirmer',
+                    style: TextStyle(fontSize: 10.5, fontStyle: FontStyle.italic, color: Colors.black45),
+                  ),
                 const SizedBox(height: 2),
                 Text(
                   formatPrice(dish.price),
