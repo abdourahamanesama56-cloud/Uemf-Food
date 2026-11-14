@@ -10,6 +10,8 @@ class Dish {
   final String? note;
   final String name;
   final String? desc;
+  final List<String> allergens;
+  final bool compositionVerified;
   final double price;
   final bool available;
   final int order;
@@ -21,6 +23,8 @@ class Dish {
     this.note,
     required this.name,
     this.desc,
+    this.allergens = const [],
+    this.compositionVerified = false,
     required this.price,
     this.available = true,
     required this.order,
@@ -35,6 +39,8 @@ class Dish {
       note: m['note'] as String?,
       name: m['name'] as String? ?? '',
       desc: m['desc'] as String?,
+      allergens: List<String>.from(m['allergens'] ?? const []),
+      compositionVerified: m['compositionVerified'] as bool? ?? false,
       price: (m['price'] as num?)?.toDouble() ?? 0,
       available: m['available'] as bool? ?? true,
       order: (m['order'] as num?)?.toInt() ?? 0,
@@ -47,6 +53,8 @@ class Dish {
         'note': note,
         'name': name,
         'desc': desc,
+        'allergens': allergens,
+        'compositionVerified': compositionVerified,
         'price': price,
         'available': available,
         'order': order,
@@ -65,7 +73,9 @@ List<Dish> seedDishes(Restaurant r) {
         section: s.title,
         note: s.note,
         name: it.name,
-        desc: it.desc,
+        desc: it.desc ?? suggestedComposition(it.name, s.title),
+        allergens: allergensFor(it.desc ?? suggestedComposition(it.name, s.title)),
+        compositionVerified: it.desc != null,
         price: it.price,
         order: n,
       ));
@@ -87,9 +97,11 @@ Map<String, List<Dish>> groupBySection(List<Dish> dishes) {
 
 class OrderLine {
   final String name;
+  final String composition;
+  final List<String> allergens;
   final double price;
   final int qty;
-  const OrderLine({required this.name, required this.price, required this.qty});
+  const OrderLine({required this.name, this.composition = '', this.allergens = const [], required this.price, required this.qty});
 }
 
 /// Une commande (collection `orders`).
@@ -133,6 +145,8 @@ class OrderDoc {
         final x = Map<String, dynamic>.from(e as Map);
         return OrderLine(
           name: x['name'] as String? ?? '',
+          composition: x['composition'] as String? ?? '',
+          allergens: List<String>.from(x['allergens'] ?? const []),
           price: (x['price'] as num?)?.toDouble() ?? 0,
           qty: (x['qty'] as num?)?.toInt() ?? 1,
         );
