@@ -36,6 +36,47 @@ String formatPrice(double p) {
   return '$s DH';
 }
 
+
+/// Composition indicative à confirmer auprès du restaurant.
+String suggestedComposition(String name, String section) {
+  final n = name.toLowerCase();
+  if (n.contains('pizza')) {
+    if (n.contains('thon')) return 'Composition indicative : pâte à pizza, sauce tomate, mozzarella, thon et herbes';
+    if (n.contains('mer')) return 'Composition indicative : pâte à pizza, sauce tomate, mozzarella et fruits de mer';
+    if (n.contains('poulet')) return 'Composition indicative : pâte à pizza, sauce tomate, mozzarella et poulet';
+    if (n.contains('végétar')) return 'Composition indicative : pâte à pizza, sauce tomate, mozzarella et légumes';
+    if (n.contains('bolognaise')) return 'Composition indicative : pâte à pizza, sauce tomate, viande hachée et mozzarella';
+    if (n.contains('peperoni')) return 'Composition indicative : pâte à pizza, sauce tomate, mozzarella et pepperoni';
+    if (n.contains('mixte')) return 'Composition indicative : pâte à pizza, sauce tomate, mozzarella et assortiment de viandes';
+    return 'Composition indicative : pâte à pizza, sauce tomate, mozzarella et basilic';
+  }
+  if (n.contains('burger')) return 'Composition indicative : pain burger, steak ou poulet selon la variété, salade, tomate et sauce. Fromage ou œuf selon le nom';
+  if (n.contains('tacos')) return 'Composition indicative : galette de blé, garniture indiquée dans le nom, frites et sauce';
+  if (n.contains('wrap')) return 'Composition indicative : tortilla de blé, poulet, crudités et sauce';
+  if (n.contains('frites')) return 'Composition indicative : pommes de terre, huile de cuisson et sel';
+  if (n.contains('chawarma')) return 'Composition indicative : pain, poulet mariné, crudités et sauce';
+  if (n.contains('kabsa')) return 'Composition indicative : riz épicé, poulet chawarma et sauce';
+  if (n.contains('poulet') || n.contains('strips') || n.contains('pilon')) return 'Composition indicative : poulet, assaisonnement et huile de cuisson';
+  if (n.contains('riz')) return 'Composition : riz';
+  if (n.contains('penne') || n.contains('pâte')) return 'Composition : pâtes de blé';
+  if (n.contains('quinoa')) return 'Composition : quinoa';
+  if (n.contains('œuf')) return 'Composition : œuf';
+  if (n.contains('fromage')) return 'Composition : fromage (type indiqué dans le nom)';
+  if (n.contains('bol énergie')) return 'Flocons d’avoine, riz, ebly, graines de lin, raisins, banane, raisins secs et miel';
+  return 'Composition indicative : ' + name + '. Ingrédients et assaisonnement à confirmer auprès du restaurant';
+}
+
+List<String> allergensFor(String? composition) {
+  final value = (composition ?? '').toLowerCase();
+  final found = <String>[];
+  if (value.contains('blé') || value.contains('pâte') || value.contains('pain') || value.contains('galette') || value.contains('tortilla') || value.contains('avoine')) found.add('Gluten');
+  if (value.contains('fromage') || value.contains('mozzarella') || value.contains('cheese') || value.contains('crème')) found.add('Lait');
+  if (value.contains('œuf') || value.contains('oeuf')) found.add('Œufs');
+  if (value.contains('thon') || value.contains('saumon') || value.contains('poisson')) found.add('Poisson');
+  if (value.contains('crevette') || value.contains('crabe') || value.contains('fruits de mer')) found.add('Crustacés');
+  return found;
+}
+
 const restaurants = <Restaurant>[
   Restaurant('pizza', 'Pizza', Icons.local_pizza, Color(0xFFC8541A), [
     MenuSection('Pizzas', [
