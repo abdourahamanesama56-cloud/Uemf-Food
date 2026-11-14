@@ -38,9 +38,18 @@ class Dish {
       section: m['section'] as String? ?? '',
       note: m['note'] as String?,
       name: m['name'] as String? ?? '',
-      desc: m['desc'] as String?,
-      allergens: List<String>.from(m['allergens'] ?? const []),
-      compositionVerified: m['compositionVerified'] as bool? ?? false,
+      desc: (m['desc'] as String?)?.trim().isNotEmpty == true
+          ? m['desc'] as String
+          : suggestedComposition(m['name'] as String? ?? '', m['section'] as String? ?? ''),
+      allergens: List<String>.from(
+        m['allergens'] ?? allergensFor(
+          (m['desc'] as String?)?.trim().isNotEmpty == true
+              ? m['desc'] as String
+              : suggestedComposition(m['name'] as String? ?? '', m['section'] as String? ?? ''),
+        ),
+      ),
+      compositionVerified: m['compositionVerified'] as bool? ??
+          ((m['desc'] as String?)?.trim().isNotEmpty == true),
       price: (m['price'] as num?)?.toDouble() ?? 0,
       available: m['available'] as bool? ?? true,
       order: (m['order'] as num?)?.toInt() ?? 0,
