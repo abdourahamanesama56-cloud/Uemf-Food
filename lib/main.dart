@@ -57,6 +57,9 @@ class _Root extends StatelessWidget {
           builder: (context, s) {
             if (s.connectionState == ConnectionState.waiting) return _loader;
             final m = s.data?.data();
+            if (m != null && m['role'] == 'owner') {
+              return const HomePage(isOwner: true);
+            }
             if (m != null && m['role'] == 'admin') {
               return AdminPage(restaurantId: m['restaurantId'] as String?);
             }

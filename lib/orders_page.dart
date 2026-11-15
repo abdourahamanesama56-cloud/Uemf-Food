@@ -22,17 +22,20 @@ class OrderCard extends StatelessWidget {
   final OrderDoc order;
   final bool showUser;
   final Widget? action;
+  final void Function(OrderLine)? onReview;
 
   const OrderCard({
     super.key,
     required this.order,
     this.showUser = false,
     this.action,
+    this.onReview,
   });
 
   @override
   Widget build(BuildContext context) {
     final color = statusColor(order.status);
+    final rv = onReview;
     final code = order.id.length >= 4 ? order.id.substring(0, 4) : order.id;
     return Card(
       color: Colors.white,
@@ -92,6 +95,15 @@ class OrderCard extends StatelessWidget {
                   children: [
                     Expanded(child: Text('${l.qty} × ${l.name}')),
                     Text(formatPrice(l.price * l.qty)),
+                    if (rv != null &&
+                        order.status == 'ready' &&
+                        l.dishId.isNotEmpty)
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        tooltip: lang.t('giveReview'),
+                        icon: const Icon(Icons.star_border, color: kGold),
+                        onPressed: () => rv(l),
+                      ),
                   ],
                 ),
               ),
@@ -168,11 +180,82 @@ class _OrdersPageState extends State<OrdersPage> {
             }
             return ListView(
               padding: const EdgeInsets.all(16),
-              children: [for (final o in list) OrderCard(order: o)],
+              children: [
+                for (final o in list)
+                  OrderCard(
+                    order: o,
+                    onReview: (l) => _reviewDialog(context, o, l),
+                  ),
+              ],
             );
           },
         ),
       ),
     );
+  }
+}
+
+/// Avis (étoiles + commentaire) sur un plat d'une commande prête.
+Future<void> _reviewDialog(BuildContext context, OrderDoc o, OrderLine l) async {
+  var rating = 5;
+  final comment = TextEditingController();
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setS) => AlertDialog(
+        title: Text(l.name),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(lang.t('yourRating')),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var i = 1; i <= 5; i++)
+                    IconButton(
+                      icon: Icon(
+                        i <= rating ? Icons.star : Icons.star_border,
+                        color: kGold,
+                        size: 32,
+                      ),
+                      onPressed: () => setS(() => rating = i),
+                    ),
+                ],
+              ),
+              TextField(
+                controller: comment,
+                maxLines: 3,
+                decoration: InputDecoration(labelText: lang.t('comment')),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(lang.t('cancel')),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(minimumSize: const Size(88, 44)),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(lang.t('save')),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (ok != true) return;
+  try {
+    await Db.addReview(o, l, rating, comment.text);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(lang.t('reviewSaved'))));
+    }
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(lang.t('errGeneric'))));
+    }
   }
 }

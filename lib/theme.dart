@@ -6,6 +6,7 @@ import 'l10n.dart';
 const kNavy = Color(0xFF14305C);
 const kTerracotta = Color(0xFFC8541A);
 const kCream = Color(0xFFFFF6E9);
+const kGold = Color(0xFFF5A623);
 
 ThemeData buildTheme() {
   final border = OutlineInputBorder(
@@ -65,4 +66,10 @@ class LangSwitch extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Marge latérale : limite le contenu à 600 px de large sur grand écran (web, tablette).
+double sidePad(BuildContext context, [double min = 16]) {
+  final w = MediaQuery.sizeOf(context).width;
+  return w > 632 ? (w - 600) / 2 : min;
 }

@@ -7,6 +7,7 @@ import 'menu_data.dart';
 import 'models.dart';
 import 'orders_page.dart';
 import 'theme.dart';
+import 'widgets.dart';
 
 /// Espace admin d'un restaurant : commandes en direct + gestion du menu.
 class AdminPage extends StatefulWidget {
@@ -165,7 +166,7 @@ class _MenuTabState extends State<_MenuTab> {
                   Text(lang.t('initMenuInfo'), textAlign: TextAlign.center),
                   const SizedBox(height: 16),
                   FilledButton(
-                    onPressed: () => Db.seedMenu(r),
+                    onPressed: () => Db.seedRestaurant(r),
                     child: Text(lang.t('initMenu')),
                   ),
                 ],
@@ -201,6 +202,15 @@ class _MenuTabState extends State<_MenuTab> {
                   children: [
                     for (final d in e.value)
                       ListTile(
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: DishImage(
+                            path: d.image,
+                            color: r.color,
+                            width: 48,
+                            height: 48,
+                          ),
+                        ),
                         title: Text(
                           d.name,
                           style: TextStyle(
@@ -259,7 +269,12 @@ Future<void> _editDish(
             ? d.price.toStringAsFixed(0)
             : d.price.toString()),
   );
-  final desc = TextEditingController(text: d?.desc ?? '');
+  final ingredients =
+      TextEditingController(text: d?.ingredients.join(', ') ?? '');
+  final cur = d?.image;
+  final image = TextEditingController(
+    text: (cur != null && cur.startsWith('http')) ? cur : '',
+  );
 
   final res = await showDialog<String>(
     context: context,
@@ -287,8 +302,16 @@ Future<void> _editDish(
             ),
             const SizedBox(height: 10),
             TextField(
-              controller: desc,
-              decoration: InputDecoration(labelText: lang.t('desc')),
+              controller: ingredients,
+              maxLines: 3,
+              decoration:
+                  InputDecoration(labelText: lang.t('ingredientsHint')),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: image,
+              keyboardType: TextInputType.url,
+              decoration: InputDecoration(labelText: lang.t('imageUrl')),
             ),
           ],
         ),
@@ -339,14 +362,15 @@ Future<void> _editDish(
       }
     }
     final maxOrder = all.fold<int>(0, (m, e) => e.order > m ? e.order : m);
-    final descText = desc.text.trim();
+    final imgText = image.text.trim();
     await Db.saveDish(Dish(
       id: d?.id ?? Db.newDishId(),
       restaurantId: rid,
       section: sec,
       note: note,
       name: name.text.trim(),
-      desc: descText.isEmpty ? null : descText,
+      ingredients: splitIngredients(ingredients.text),
+      image: imgText.isNotEmpty ? imgText : cur,
       price: p,
       available: d?.available ?? true,
       order: d?.order ?? maxOrder + 1,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'cart.dart';
 import 'cart_page.dart';
 import 'db.dart';
+import 'dish_tile.dart';
 import 'l10n.dart';
 import 'menu_data.dart';
 import 'models.dart';
@@ -18,6 +19,9 @@ class MenuPage extends StatefulWidget {
 
 class _MenuPageState extends State<MenuPage> {
   late final Stream<List<Dish>> _menu = Db.menu(widget.resto.id);
+  late final Stream<List<Review>> _reviews =
+      Db.reviews(restaurantId: widget.resto.id);
+  String _query = '';
 
   @override
   Widget build(BuildContext context) {
@@ -27,57 +31,78 @@ class _MenuPageState extends State<MenuPage> {
       builder: (context, _) {
         return Scaffold(
           bottomNavigationBar: _cartBar(context, resto),
-          body: StreamBuilder<List<Dish>>(
-            stream: _menu,
-            builder: (context, snap) {
-              // Tant que l'admin n'a pas initialisé la base, on affiche le menu local.
-              final remote = snap.data ?? const <Dish>[];
-              final dishes = remote.isNotEmpty ? remote : seedDishes(resto);
-              final groups = groupBySection(dishes);
-              return CustomScrollView(
-                slivers: [
-                  SliverAppBar(
-                    pinned: true,
-                    expandedHeight: 170,
-                    backgroundColor: resto.color,
-                    foregroundColor: Colors.white,
-                    actions: const [CartButton()],
-                    flexibleSpace: FlexibleSpaceBar(
-                      title: Text(resto.name),
-                      background: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Image.asset(
+          body: StreamBuilder<List<Review>>(
+            stream: _reviews,
+            builder: (context, rs) => StreamBuilder<List<Dish>>(
+              stream: _menu,
+              builder: (context, snap) {
+                // Tant que le restaurant n'est pas initialisé, on affiche le menu local.
+                final remote = snap.data ?? const <Dish>[];
+                final all = remote.isNotEmpty ? remote : seedDishes(resto);
+                final q = fold(_query.trim());
+                final shown = q.isEmpty
+                    ? all
+                    : all
+                        .where((d) =>
+                            fold('${d.name} ${d.ingredients.join(' ')}')
+                                .contains(q))
+                        .toList();
+                final groups = groupBySection(shown);
+                final byDish =
+                    ratingsBy(rs.data ?? const <Review>[], (r) => r.dishId);
+                final side = sidePad(context);
+                return CustomScrollView(
+                  slivers: [
+                    SliverAppBar(
+                      pinned: true,
+                      expandedHeight: 130,
+                      backgroundColor: resto.color,
+                      foregroundColor: Colors.white,
+                      actions: const [CartButton()],
+                      flexibleSpace: FlexibleSpaceBar(
+                        title: Text(resto.name),
+                        background: Align(
+                          alignment: Alignment.centerRight,
+                          child: Image.asset(
                             resto.image,
+                            height: 130,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stack) =>
-                                ColoredBox(color: resto.color),
+                                const SizedBox.shrink(),
                           ),
-                          const DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [Color(0x33000000), Color(0xAA000000)],
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        for (final e in groups.entries)
-                          ..._section(e.key, e.value),
-                      ]),
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(side, 16, side, 0),
+                      sliver: SliverToBoxAdapter(
+                        child: TextField(
+                          onChanged: (v) => setState(() => _query = v),
+                          decoration: InputDecoration(
+                            hintText: lang.t('search'),
+                            prefixIcon: const Icon(Icons.search),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
-              );
-            },
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(side, 0, side, 24),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          if (groups.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 32),
+                              child: Center(child: Text(lang.t('noResults'))),
+                            ),
+                          for (final e in groups.entries)
+                            ..._section(e.key, e.value, byDish),
+                        ]),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         );
       },
@@ -102,7 +127,11 @@ class _MenuPageState extends State<MenuPage> {
     );
   }
 
-  List<Widget> _section(String title, List<Dish> list) {
+  List<Widget> _section(
+    String title,
+    List<Dish> list,
+    Map<String, Rating> byDish,
+  ) {
     final note = list.first.note;
     return [
       Padding(
@@ -138,90 +167,16 @@ class _MenuPageState extends State<MenuPage> {
           children: [
             for (var i = 0; i < list.length; i++) ...[
               if (i > 0) const Divider(height: 1),
-              _DishRow(dish: list[i]),
+              DishTile(
+                dish: list[i],
+                color: widget.resto.color,
+                rating: byDish[list[i].id],
+                restoName: widget.resto.name,
+              ),
             ],
           ],
         ),
       ),
     ];
-  }
-}
-
-class _DishRow extends StatelessWidget {
-  final Dish dish;
-  const _DishRow({required this.dish});
-
-  @override
-  Widget build(BuildContext context) {
-    final q = cart.qtyOf(dish.id);
-    final off = !dish.available;
-    final desc = dish.desc;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  dish.name,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: off ? Colors.grey : null,
-                    decoration: off ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-                if (desc != null && desc.isNotEmpty)
-                  Text(
-                    desc,
-                    style: const TextStyle(fontSize: 12.5, color: Colors.black54),
-                  ),
-                const SizedBox(height: 2),
-                Text(
-                  formatPrice(dish.price),
-                  style: const TextStyle(
-                    color: kTerracotta,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (off)
-            Text(
-              lang.t('soldOut'),
-              style: const TextStyle(
-                color: Color(0xFFB3261E),
-                fontWeight: FontWeight.bold,
-              ),
-            )
-          else if (q == 0)
-            IconButton.filled(
-              style: IconButton.styleFrom(
-                backgroundColor: kTerracotta,
-                foregroundColor: Colors.white,
-              ),
-              icon: const Icon(Icons.add),
-              onPressed: () => addToCart(context, dish),
-            )
-          else
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.remove_circle_outline),
-                  onPressed: () => cart.remove(dish),
-                ),
-                Text('$q', style: const TextStyle(fontWeight: FontWeight.bold)),
-                IconButton(
-                  icon: const Icon(Icons.add_circle, color: kTerracotta),
-                  onPressed: () => addToCart(context, dish),
-                ),
-              ],
-            ),
-        ],
-      ),
-    );
   }
 }
